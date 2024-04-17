@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
+
 
 import sqlite3
 
@@ -26,6 +28,7 @@ def add_order():
     customer_name_entry.delete(0, tk.END)
     order_details_entry.delete(0, tk.END)
     view_orders()
+    messagebox.showinfo("Успешно", "Заказ успешно добавлен")
 
 def view_orders():
     for i in tree.get_children():
@@ -39,6 +42,21 @@ def view_orders():
         tree.insert("", tk.END, values=row)
     conn.commit()
     conn.close()
+
+def complete_order():
+    selected_item = tree.selection()
+    if selected_item:
+        order_id = tree.item(selected_item[0])["values"][0]
+        conn = sqlite3.connect("businees_orders.db")
+        cur = conn.cursor()
+        cur.execute("UPDATE orders SET status = 'завершен' WHERE id =?",
+                    (order_id,))
+        conn.commit()
+        conn.close()
+        view_orders()
+        messagebox.showinfo("Успешно", "Заказ успешно завершен")
+    else:
+        messagebox.showwarning("Предупреждение", "Выберите заказ для изменения статуса")
 
 
 
@@ -59,6 +77,10 @@ order_details_entry .pack()
 # команда для добавления заказа
 add_button = tk.Button(app, text="Добавить заказ", command=add_order)
 add_button.pack()
+complete_button = tk.Button(app, text="Завершить заказ", command=complete_order)
+complete_button.pack()
+
+
 
 columns = ("id", "customer_name", "order_details","status")
 tree = ttk.Treeview(app, columns=columns, show="headings")
