@@ -5,6 +5,7 @@ from tkinter import messagebox
 
 import sqlite3
 
+
 # создаем базу данных
 def init_db():
     conn = sqlite3.connect("businees_orders.db")
@@ -12,11 +13,10 @@ def init_db():
     cur.execute('''CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         customer_name TEXT NOT NULL,
-        order_details TEXTNOT NULL,
-        status TEXTNOT NULL
-    )''')
+        order_details TEXT NOT NULL)''')
     conn.commit()
     conn.close()
+
 def add_order():
     conn = sqlite3.connect("businees_orders.db")
     cur = conn.cursor()
@@ -31,22 +31,22 @@ def add_order():
     messagebox.showinfo("Успешно", "Заказ успешно добавлен")
 
 def view_orders():
-    for i in tree.get_children():
-        tree.delete(i)
-
+    for i in orders_tree.get_children():
+        orders_tree.delete(i)
     conn = sqlite3.connect("businees_orders.db")
     cur = conn.cursor()
     cur.execute("SELECT * FROM orders")
     rows = cur.fetchall()
     for row in rows:
-        tree.insert("", tk.END, values=row)
+        orders_tree.insert("", tk.END, values=row)
     conn.commit()
     conn.close()
 
+
 def complete_order():
-    selected_item = tree.selection()
+    selected_item = orders_tree.selection()
     if selected_item:
-        order_id = tree.item(selected_item[0])["values"][0]
+        order_id = orders_tree.item(selected_item[0])["values"][0]
         conn = sqlite3.connect("businees_orders.db")
         cur = conn.cursor()
         cur.execute("UPDATE orders SET status = 'завершен' WHERE id =?",
@@ -58,11 +58,9 @@ def complete_order():
     else:
         messagebox.showwarning("Предупреждение", "Выберите заказ для изменения статуса")
 
-
-# Функция удаления
 def delete_order():
-    selected_item = tree.selection()[0]  # Получаем выбранный элемент
-    order_id = tree.item(selected_item, 'values')[0]  # Получаем ID заказа из первой колонки
+    selected_item = orders_tree.selection()[0]  # Получаем выбранный элемент
+    order_id = orders_tree.item(selected_item, 'values')[0]  # Получаем ID заказа из первой колонки
     confirm = messagebox.askyesno("Подтверждение", "Вы действительно хотите удалить выбранный заказ?")
 
     if confirm:
@@ -72,46 +70,54 @@ def delete_order():
                 cur.execute("DELETE FROM orders WHERE id=?", (order_id,))
 
                 # Удаляем из интерфейса пользователя
-                tree.delete(selected_item)
+                orders_tree.delete(selected_item)
 
                 messagebox.showinfo("Успех", "Заказ успешно удален")
         except Exception as e:
             messagebox.showerror("Ошибка", f"Произошла ошибка при удалении: {e}")
+window = tk.Tk()
+window.title("Управление Заказами")
+
+# Фрейм для ввода данных
+input_frame = tk.Frame(window, padx=10, pady=10)
+input_frame.pack(padx=10, pady=5, fill="x", expand=True)
+
+# Элементы ввода
+tk.Label(input_frame, text="Имя клиента:").pack(side="left")
+customer_name_entry = tk.Entry(input_frame)
+customer_name_entry.pack(side="left", expand=True, padx=5)
+
+tk.Label(input_frame, text="Детали заказа:").pack(side="left")
+order_details_entry = tk.Entry(input_frame)
+order_details_entry.pack(side="left", expand=True, padx=5)
+
+# Фрейм для кнопок
+button_frame = tk.Frame(window, padx=10, pady=10)
+button_frame.pack(padx=10, pady=5, fill="x")
+
+# Кнопки
+add_button = tk.Button(button_frame, text="Добавить заказ", command=add_order)
+add_button.pack(side="left", padx=5)
+
+update_button = tk.Button(button_frame, text="Обновить выбранный", command=complete_order)
+update_button.pack(side="left", padx=5)
+
+delete_button = tk.Button(button_frame, text="Удалить выбранный", command=delete_order)
+delete_button.pack(side="left", padx=5)
+
+# Фрейм для списка заказов
+orders_frame = tk.Frame(window, padx=10, pady=10)
+orders_frame.pack(padx=10, pady=5, fill="both", expand=True)
+
+# Список заказов
+orders_tree = ttk.Treeview(orders_frame, columns=("ID", "Customer", "Order", "Status"), show="headings")
+orders_tree.heading("ID", text="ID")
+orders_tree.heading("Customer", text="Имя клиента")
+orders_tree.heading("Order", text="Детали заказа")
+orders_tree.heading("Status", text="Статус  заказа")
+orders_tree.pack(fill="both", expand=True)
 
 
-
-
-app = tk.Tk()
-app.title("Система управления заказами")
-
-
-# поле для ввода имени пользователя
-tk.Label(app, text="Введите имя пользователя").pack()
-customer_name_entry = tk.Entry(app)
-customer_name_entry.pack()
-
-# поле для ввода заказа
-tk.Label(app, text="Детали заказа").pack()
-order_details_entry = tk.Entry(app)
-order_details_entry .pack()
-# команда для добавления заказа
-add_button = tk.Button(app, text="Добавить заказ", command=add_order)
-add_button.pack()
-complete_button = tk.Button(app, text="Завершить заказ", command=complete_order)
-complete_button.pack()
-delete_button = tk.Button(app, text="Удалить заказ", command=delete_order)
-delete_button.pack()
-
-
-
-columns = ("id", "customer_name", "order_details","status")
-tree = ttk.Treeview(app, columns=columns, show="headings")
-for column in columns:
-    tree.heading(column, text=column)
-tree.pack()
-
-
-init_db() # выполняем команду для создания базы данных
-view_orders() # выполняем команду для вывода данных из базы данных
-app.mainloop()
-
+init_db()
+view_orders()
+window.mainloop()
